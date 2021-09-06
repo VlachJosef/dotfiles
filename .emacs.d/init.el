@@ -124,31 +124,68 @@
 ;;;;(add-to-list 'package-archives
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+
+(when (not package-archive-contents)
+  (package-refresh-contents))
+
 ;;;;(add-to-list 'package-archives
 ;;;;         '("SC" . "http://joseito.republika.pl/sunrise-commander/") t)
 (package-initialize)
 
+;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+   (package-install 'use-package))
+(require 'use-package)
+
+(use-package rainbow-delimiters
+  :ensure t)
+
+(use-package dired-x) ;; So dired-jump is autoloaded
+
+(use-package ivy
+  :ensure t
+  :init
+  (ivy-mode 1)
+  :config
+  (setq ivy-display-style 'fancy)
+  ;;(setcdr (assoc 'counsel-M-x ivy-initial-inputs-alist) "") ;; get rid of ^ in M-x prompt
+  :bind
+  (:map ivy-mode-map
+        ("C-x b" . ivy-switch-buffer-plain))
+  (:map ivy-minibuffer-map
+        ("M-o" . other-window)
+        ("s-F" . scala-minibuffer-search/body)
+        ("M-k" . ivy-dispatching-done)))
+
+(use-package dash
+  :ensure t)
+
+(use-package zenburn-theme
+  :ensure t)
+
+
+
 ;; this needs to be after package-initialize to overwrite default melpa packages
-(add-to-list 'load-path "~/develop-emacs/emacswiki")
+;;(add-to-list 'load-path "~/develop-emacs/emacswiki")
 ;;(add-to-list 'load-path "~/develop-emacs/hs-lint")
 ;;(add-to-list 'load-path "~/develop-purescript/purescript-mode/")
-(add-to-list 'load-path "~/develop-ensime/emacs-sbt-mode/")
-(add-to-list 'load-path "~/develop-emacs/restclient.el/")
-(add-to-list 'load-path "~/develop-emacs/println-debugger/")
-(add-to-list 'load-path "~/develop-emacs/spark-runner/")
+;; (add-to-list 'load-path "~/develop-ensime/emacs-sbt-mode/")
+;; (add-to-list 'load-path "~/develop-emacs/restclient.el/")
+;; (add-to-list 'load-path "~/develop-emacs/println-debugger/")
+;; (add-to-list 'load-path "~/develop-emacs/spark-runner/")
 (add-to-list 'load-path "~/develop-emacs/scala-utils/")
-(add-to-list 'load-path "~/develop-emacs/ag-haskell-hydra/")
-(add-to-list 'load-path "~/develop-emacs/simple-ghci-mode/")
+;; (add-to-list 'load-path "~/develop-emacs/ag-haskell-hydra/")
+;; (add-to-list 'load-path "~/develop-emacs/simple-ghci-mode/")
 ;;(add-to-list 'load-path "~/develop-nix/nix-mode/")
 ;;(add-to-list 'load-path "~/.emacs.d/json-mode/") ;; https://github.com/UwUnyaa/json-mode
-(add-to-list 'load-path "~/.emacs.d/emacs-sdcv/") ;; https://github.com/gucong/emacs-sdcv
+;;(add-to-list 'load-path "~/.emacs.d/emacs-sdcv/") ;; https://github.com/gucong/emacs-sdcv
 ;;(add-to-list 'load-path "~/.emacs.d/gited/")
 ;;(add-to-list 'load-path "~/.emacs.d/ghcid/")
-(add-to-list 'load-path "~/develop-godot/emacs-gdscript-mode/")
-(add-to-list 'load-path "~/develop-emacs/sbt-rpc-client.el/")
-(add-to-list 'load-path "~/develop-emacs/sbt-test-runner.el/")
-(add-to-list 'load-path "~/develop-emacs/semanticdb-mode.el/")
-(add-to-list 'load-path "~/develop-emacs/javap-mode/")
+;; (add-to-list 'load-path "~/develop-godot/emacs-gdscript-mode/")
+;; (add-to-list 'load-path "~/develop-emacs/sbt-rpc-client.el/")
+;; (add-to-list 'load-path "~/develop-emacs/sbt-test-runner.el/")
+;; (add-to-list 'load-path "~/develop-emacs/semanticdb-mode.el/")
+;; (add-to-list 'load-path "~/develop-emacs/javap-mode/")
 ;(add-to-list 'load-path "~/develop-godot/emacs-gdscript-mode-debugger/")
 ;;(add-to-list 'load-path "~/develop-emacs/scala-import")
 
@@ -156,12 +193,12 @@
 ;;(require 'ag-haskell-hydra)
 ;;(require 'simple-ghci-mode)
 ;;(require 'jsonb-mode)
-(require 'sdcv-mode)
+;;(require 'sdcv-mode)
 ;;(require 'scala-import)
-(require 'sbt-rpc-client-connect)
-(require 'sbt-test-munit)
-(require 'scala-semanticdb-mode)
-(require 'javap-mode)
+;; (require 'sbt-rpc-client-connect)
+;; (require 'sbt-test-munit)
+;; (require 'scala-semanticdb-mode)
+;; (require 'javap-mode)
 ;;(require 'gited)
 ;;(define-key dired-mode-map "\C-x\C-g" 'gited-list-branches)
 
@@ -176,11 +213,9 @@
 ;;-(smex-initialize)
 ;;(require 'ghcid)
 
-(require 'gdscript-mode)
+;;(require 'gdscript-mode)
 
 ;;(require 'gdscript-debugger)
-
-(require 'use-package)
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -228,7 +263,8 @@
     (erc-timestamp-mode t)
     (erc-track-mode t)))
 
-(use-package scala-utils)
+(use-package scala-utils
+  :after scala-mode)
 (global-set-key (kbd "C-s-:") 'scala-utils:wrap-in-braces)
 
 (defface face-ghci-link
@@ -239,6 +275,7 @@
   (setq goto-address-url-face 'face-ghci-link))
 
 (use-package prettier-js
+  :ensure t
   :config
   (add-hook 'js-mode-hook
             (lambda ()
@@ -257,7 +294,7 @@
 ;;   (bind-key "C-x 4 s" `sgm:switch-to-ghci-buffer simple-ghci-mode-map) ;; This doesn't override entry in global-map done in defuns.el
 ;;   (bind-key "s-F" `ahh:projectile-ag-regexp))
 
-(use-package sbt-or-ghci)
+;;(use-package sbt-or-ghci)
 
 (use-package color-identifiers-mode
   :ensure t
@@ -326,6 +363,7 @@
   (recentf-mode +1))
 
 (use-package session
+  :ensure t
   :init
   (setq session-jump-undo-threshold 80) ; change positions must differ by 80 characters
   (global-set-key [(control ?.)] 'session-jump-to-last-change))
@@ -333,31 +371,38 @@
 ;;(add-hook 'after-init-hook 'session-initialize)
 ;;(desktop-save-mode)
 
-(require 'bookmark+)
+;;(require 'bookmark+)
 
 ;; (use-package ido-vertical-mode
 ;;   :config
 ;;   (ido-vertical-mode 1))
 
 (use-package hydra
-   :ensure t)
+  :ensure t)
+
+(use-package graphql-mode
+  :ensure t)
+
+(use-package transpose-frame
+  :ensure t)
 
 ;; (use-package move-dup
 ;;   :config
 ;;   (global-move-dup-mode 1))
 
-(use-package key-chord
-  :config
-  (key-chord-mode 1)
-  (key-chord-define-global "jj" 'avy-goto-char-timer)
-  (key-chord-define-global "jk" 'avy-goto-word-1)
-  (key-chord-define-global "jl" 'avy-goto-line))
+;; (use-package key-chord
+;;   :config
+;;   (key-chord-mode 1)
+;;   (key-chord-define-global "jj" 'avy-goto-char-timer)
+;;   (key-chord-define-global "jk" 'avy-goto-word-1)
+;;   (key-chord-define-global "jl" 'avy-goto-line))
 
 (use-package shell
   :bind (:map shell-mode-map
               ("C-c C-v" . comint-clear-buffer)))
 
 (use-package rg
+  :ensure t
   ;;:config
   )
 
@@ -371,21 +416,6 @@
   :bind (:map ag-mode-map
               ("t" . no-test-line)))
 
-(use-package ivy
-  :ensure t
-  :init
-  (ivy-mode 1)
-  :config
-  (setq ivy-display-style 'fancy)
-  ;;(setcdr (assoc 'counsel-M-x ivy-initial-inputs-alist) "") ;; get rid of ^ in M-x prompt
-  :bind
-  (:map ivy-mode-map
-        ("C-x b" . ivy-switch-buffer-plain))
-  (:map ivy-minibuffer-map
-        ("M-o" . other-window)
-        ("s-F" . scala-minibuffer-search/body)
-        ("M-k" . ivy-dispatching-done)))
-
 (add-hook 'graphql-mode-hook
           (lambda ()
             (rainbow-delimiters-mode)
@@ -395,6 +425,7 @@
             (glasses-mode)))
 
 (use-package counsel
+  :ensure t
   :config
   (setcdr (assoc 'counsel-M-x ivy-initial-inputs-alist) "")) ;; get rid of ^ in M-x prompt)
 
@@ -432,6 +463,7 @@
   (my/smarter-move-beginning-of-line))
 
 (use-package highlight-symbol
+  :ensure t
   :diminish highlight-symbol-mode
   :commands highlight-symbol
   :bind (("s-h" . highlight-symbol)
@@ -440,6 +472,7 @@
          ("s-r" . highlight-symbol-remove-all)))
 
 (use-package zygospore
+  :ensure t
   :bind ("C-x 1" . zygospore-toggle-delete-other-windows))
 
 ;; (use-package general-close
@@ -454,6 +487,7 @@
 ;;-  :bind ("C-c C-j" . git-gutter:revert-hunk))
 
 (use-package magit
+  :ensure t
   :init
   (setq magit-visit-ref-behavior '(checkout-any focus-on-ref))
   :commands magit-status magit-blame
@@ -487,15 +521,16 @@
 ;;set javaOptions in jobs := Seq("-Dpure.conf.file=myconf.conf", "-Dconfig.file=myconf.conf", "-Dlogger.file=logback-debug.xml", "-Dpure.env=development")
 ;;set javaOptions in (jobs, run) := Seq("-Dpure.conf.file=myconf.conf", "-Dconfig.file=myconf.conf", "-Dlogger.file=logback-debug.xml", "-Dpure.env=development")
 
-(use-package furl)
+;;(use-package furl)
 
 (use-package sbt-mode
- :init
- (setq sbt:sbt-prompt-regexp "^\\(\\[[^\]]*\\] \\)?[>$][ ]*"
-       ;;sbt:program-options '("-Djline.terminal=auto" "-Dsbt.supershell=false")
-       sbt-hydra:allowed-files-regexp '(".*.scala$" ".*/routes$" ".*.scala.html$"))
- ;;:bind (("C-c C-s" . restclient:save-single-buffer-and-make-rest-call))
- )
+  :ensure t
+  :init
+  (setq sbt:sbt-prompt-regexp "^\\(\\[[^\]]*\\] \\)?[>$][ ]*"
+        ;;sbt:program-options '("-Djline.terminal=auto" "-Dsbt.supershell=false")
+        sbt-hydra:allowed-files-regexp '(".*.scala$" ".*/routes$" ".*.scala.html$"))
+  ;;:bind (("C-c C-s" . restclient:save-single-buffer-and-make-rest-call))
+  )
 ;;
 (use-package sbt-mode-hydra
   :bind (("C-c v" . sbt-hydra)))
@@ -516,12 +551,16 @@
   (define-key company-active-map (kbd "TAB") nil))
 
 (use-package yasnippet
+  :ensure t
   ;;:diminish yas-minor-mode
   ;':commands yas-minor-mode
   :config
   (yas-reload-all) ;; Load snippets when launching Emacs
   ;; (define-key yas-minor-mode-map [tab] #'yas-expand)
   )
+
+(use-package which-key
+  :ensure t)
 
 ;;(require 'ido-vertical-mode)
 ;;(ido-mode 1)
@@ -533,10 +572,7 @@
 ;; inspiration https://github.com/rmm5t/dotfiles/blob/df77009c326a9d09f23e7bedcd44e9658f26bc6f/emacs.d/init.el
 (load "~/.emacs.d/personal/defuns")
 ;;(load "~/.emacs.d/personal/pure360")
-(load "~/.emacs.d/personal/private")
 ;;(load "~/.emacs.d/lambdacalc.el")
-
-(personal 'kbd-macros)
 
 ;;(add-hook 'sbt-mode-hook' (lambda () (run-last-sbt-command)))
 
@@ -551,8 +587,7 @@
 ;;(setq exec-path (append exec-path '("/Users/pepa/bin/")))
 (setq exec-path (append exec-path '("/Users/pepa/.nvm/versions/node/v10.15.1/bin/")))
 
-(when (not package-archive-contents)
-  (package-refresh-contents))
+
 
 ;;(setenv "PATH" (concat "/Users/pepa/bin/:" (getenv "PATH")))
 ;;(setenv "PATH" (shell-command-to-string "source ~/.bashrc; echo -n $PATH"))
@@ -591,6 +626,7 @@
   :bind ("C-M-j" . join-line))
 
 (use-package scala-mode
+  :ensure t
   :init
   (setq scala-indent:use-javadoc-style t
         scala-indent:align-parameters t)
@@ -632,6 +668,7 @@
             (glasses-mode)))
 
 (use-package inf-mongo
+  :ensure t
   :init
   (setq
    inf-mongo-command "/Users/pepa/develop-sensible/mongodb-osx-x86_64-3.2.7/bin/mongo 127.0.0.1:27007"))
@@ -645,6 +682,7 @@
    glasses-separate-parentheses-p nil))
 
 (use-package smartparens
+  :ensure t
   :diminish smartparens-mode
   :commands
   ;;smartparens-strict-mode
@@ -825,7 +863,9 @@
 
 (add-to-list 'load-path (concat user-emacs-directory "ensime-emacs"))
 
-(require 'ace-jump-zap)
+(use-package ace-jump-zap
+  :ensure t)
+
 (define-key global-map (kbd "C-z" ) `ace-jump-zap-up-to-char)
 
 ;; set up ido mode
@@ -991,7 +1031,8 @@
 
 
 
-(use-package web-mode)
+(use-package web-mode
+  :ensure t)
 
 (add-to-list 'auto-mode-alist '("\\.scala.html\\'" . web-mode))
 
@@ -1389,12 +1430,12 @@ point reaches the beginning or end of the buffer, stop there."
   :bind (:map
          restclient-mode-map ("C-c C-o" . open-template-in-browser)))
 
-(use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration))
-  :config (setq lsp-completion-enable-additional-text-edit nil))
-(use-package lsp-ui)
-(use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
-;;(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-(use-package dap-java :ensure nil)
+;; (use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration))
+;;   :config (setq lsp-completion-enable-additional-text-edit nil))
+;; (use-package lsp-ui)
+;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
+;; ;;(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
+;; (use-package dap-java :ensure nil)
 (use-package ibuffer
   :config
   :bind (("M-o" . other-window)
@@ -1468,8 +1509,6 @@ point reaches the beginning or end of the buffer, stop there."
  '(magit-commit-arguments nil)
  '(magit-log-arguments
    '("--graph" "--color" "--decorate" "--show-signature" "-n256"))
- '(package-selected-packages
-   '(graphql-mode dired-du hydra json-mode ivy counsel transpose-frame info-colors whole-line-or-region lsp-ui lsp-java typescript-mode glsl-mode rg lsp-mode prettier-js ansi feature-mode color-identifiers-mode overseer bookmark+ bookmarks+ dante ialign wgrep-ag idris-mode nodejs-repl mustache-mode package-build shut-up epl git commander dash s iedit psc-ide aggressive-indent engine-mode company-quickhelp company-nixos-options revive expand-region zygospore yaml-mode web-mode use-package suggest smex smartparens shm session scss-mode restclient rainbow-delimiters puppet-mode protobuf-mode projectile popup-imenu play-routes-mode pcre2el octopress markdown-mode key-chord js2-mode inf-mongo hindent highlight-symbol grizzl git-timemachine furl flycheck csv-mode crux company-ghc cask beacon avy anzu ag ace-jump-zap))
  '(safe-local-variable-values
    '((haskell-stylish-on-save)
      (intero-targets "simple-hpack:test:simple-hpack-test")
