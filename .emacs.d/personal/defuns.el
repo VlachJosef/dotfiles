@@ -726,5 +726,5 @@ prompt additionally for EXTRA-AG-ARGS."
 
     (if (and buffer-a buffer-b)
         (ediff-buffers buffer-a buffer-b)
-      (message "No availabel buffers to compare. Setting to `restclient-same-buffer-response' to nil")
+      (message "No available buffers to compare. Setting to `restclient-same-buffer-response' to nil")
       (setq restclient-same-buffer-response nil))))

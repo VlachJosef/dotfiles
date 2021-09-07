@@ -529,8 +529,11 @@
 
 ;;(use-package furl)
 
+(use-package restclient
+  :ensure t)
+
 (use-package sbt-mode
-  :ensure t
+  :straight (sbt-mode :type git :host github :repo "VlachJosef/emacs-sbt-mode" :branch "jv/reStart")
   :init
   (setq sbt:sbt-prompt-regexp "^\\(\\[[^\]]*\\] \\)?[>$][ ]*"
         ;;sbt:program-options '("-Djline.terminal=auto" "-Dsbt.supershell=false")
