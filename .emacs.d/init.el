@@ -32,7 +32,8 @@
  switch-to-buffer-preserve-window-point t
  frame-resize-pixelwise t
  split-window-keep-point nil
- initial-major-mode 'emacs-lisp-mode)
+ initial-major-mode 'emacs-lisp-mode
+ ring-bell-function 'ignore)
 
 (global-hl-line-mode -1)
 
@@ -90,18 +91,6 @@
                            (add-hook 'before-save-hook 'sbt-hydra:check-modified-buffers)
                            ))
 
-
-;; (add-hook 'simple-ghci-mode-hook (lambda ()
-;;                                    (smartparens-mode)
-;;                                    (subword-mode)
-;;                                    (rainbow-delimiters-mode)))
-
-;;(add-hook 'after-save-hook 'sbt-run-previous-command)
-
-
-;;(add-hook 'after-save-hook 'sbt-run-previous-command)
-;;(add-hook 'after-save-hook 'aaa-bbb)
-
 (defun clear-sbt-compilation-buffer ()
   (let ((current-sbt-root (sbt:find-root)))
     (loop for process being the elements of (process-list)
@@ -116,12 +105,8 @@
           do (progn
                (sbt:clear current-process-buffer)))))
 
-;;(load-file "~/.emacs.d/compile-.el")
-;;(load-file "~/.emacs.d/compile+.el")
-;;(require 'compile+)
 (require 'package)
 
-;;;;(add-to-list 'package-archives
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
@@ -161,9 +146,9 @@
   :ensure t)
 
 (use-package zenburn-theme
-  :ensure t)
-
-
+  :ensure t
+  :config
+  (load-theme 'zenburn :no-confirm))
 
 ;; this needs to be after package-initialize to overwrite default melpa packages
 ;;(add-to-list 'load-path "~/develop-emacs/emacswiki")
@@ -173,15 +158,11 @@
 ;; (add-to-list 'load-path "~/develop-emacs/restclient.el/")
 ;; (add-to-list 'load-path "~/develop-emacs/println-debugger/")
 ;; (add-to-list 'load-path "~/develop-emacs/spark-runner/")
-(add-to-list 'load-path "~/develop-emacs/scala-utils/")
-;; (add-to-list 'load-path "~/develop-emacs/ag-haskell-hydra/")
 ;; (add-to-list 'load-path "~/develop-emacs/simple-ghci-mode/")
 ;;(add-to-list 'load-path "~/develop-nix/nix-mode/")
 ;;(add-to-list 'load-path "~/.emacs.d/json-mode/") ;; https://github.com/UwUnyaa/json-mode
 ;;(add-to-list 'load-path "~/.emacs.d/emacs-sdcv/") ;; https://github.com/gucong/emacs-sdcv
-;;(add-to-list 'load-path "~/.emacs.d/gited/")
 ;;(add-to-list 'load-path "~/.emacs.d/ghcid/")
-;; (add-to-list 'load-path "~/develop-godot/emacs-gdscript-mode/")
 ;; (add-to-list 'load-path "~/develop-emacs/sbt-rpc-client.el/")
 ;; (add-to-list 'load-path "~/develop-emacs/sbt-test-runner.el/")
 ;; (add-to-list 'load-path "~/develop-emacs/semanticdb-mode.el/")
@@ -268,17 +249,6 @@
     (erc-timestamp-mode t)
     (erc-track-mode t)))
 
-(use-package scala-utils
-  :after scala-mode)
-(global-set-key (kbd "C-s-:") 'scala-utils:wrap-in-braces)
-
-(defface face-ghci-link
-  '((t :foreground "yellow green")) "highligh links in simple-ghci-mode mode") ;; run list-colors-display to view predefined colors
-
-(use-package goto-addr
-  :config
-  (setq goto-address-url-face 'face-ghci-link))
-
 (use-package prettier-js
   :ensure t
   :config
@@ -316,14 +286,6 @@
     "https://github.com/search?q=org:hmrc+%s"
     :keybinding "m")
 
-  (defengine github-internal
-    "https://github.tools.tax.service.gov.uk/q=org:hmrc+%s"
-    :keybinding "n")
-
-  (defengine hoogle
-    "http://localhost:8080/?hoogle=%s"
-    :keybinding "h")
-
   (defengine google
     "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s"
     :keybinding "g")
@@ -338,23 +300,6 @@
 
 (use-package iedit
   :ensure t)
-
-(use-package psci
-  :ensure t)
-
-(use-package psc-ide
-  :ensure t
-  :config
-  (add-hook 'purescript-mode-hook
-            (lambda ()
-              (psc-ide-mode)
-              (company-mode)
-              (flycheck-mode)
-              (smartparens-mode)
-              (subword-mode)
-              (turn-on-purescript-indentation)))
-  (bind-key "M-n" `flycheck-next-error purescript-mode-map)
-  (bind-key "M-p" `flycheck-previous-error purescript-mode-map))
 
 (use-package recentf
   :config
@@ -393,7 +338,19 @@
   :ensure t)
 
 (use-package json-mode
-  :ensure t)
+  :ensure t
+  :config
+  :bind (:map json-mode-map
+              ("C-c C-c" . upload-template)
+              ("C-c C-o" . open-template-in-browser)))
+
+(add-hook 'json-mode-hook (lambda ()
+                               (subword-mode)
+                               (glasses-mode)
+                               (smartparens-mode)
+                               (company-mode)
+                               (rainbow-delimiters-mode)
+                               (yas-minor-mode)))
 
 ;; (use-package move-dup
 ;;   :config
@@ -411,9 +368,7 @@
               ("C-c C-v" . comint-clear-buffer)))
 
 (use-package rg
-  :ensure t
-  ;;:config
-  )
+  :ensure t)
 
 (use-package ag
   :commands ag
@@ -464,12 +419,6 @@
   :config (winner-mode 1)
   :bind (("C-s-p" . winner-undo)   ;; Control + Shift + Cmd + p
          ("C-s-n" . winner-redo))) ;; Control + Shift + Cmd + n
-
-(defun find-class ()
-  (interactive)
-  (call-interactively 'projectile-ag)
-  (message ":::: %s" (buffer-name))
-  (my/smarter-move-beginning-of-line))
 
 (use-package highlight-symbol
   :ensure t
@@ -539,7 +488,11 @@
 ;;(use-package furl)
 
 (use-package restclient
-  :ensure t)
+  :ensure t
+  :hook ((restclient-mode . smartparens-mode)
+         (restclient-mode . subword-mode))
+  :bind (:map
+         restclient-mode-map ("C-c C-o" . open-template-in-browser)))
 
 (use-package sbt-mode
   :straight (sbt-mode :type git :host github :repo "VlachJosef/emacs-sbt-mode" :branch "jv/reStart")
@@ -578,12 +531,14 @@
   )
 
 (use-package which-key
-  :ensure t)
+  :ensure t
+  :config
+  (which-key-mode nil))
 
 ;;(require 'ido-vertical-mode)
 ;;(ido-mode 1)
 ;;(ido-vertical-mode 1)
-(which-key-mode nil)
+
 ;; Standard key for next and previous are C-s and C-r no need to replace with C-n and C-p
 ;;(setq ido-vertical-define-keys 'C-n-and-C-p-only)
 
@@ -667,15 +622,6 @@
             ;;(define-key yas-minor-mode-map [tab] #'yas-expand)
             ;;(local-set-key (kbd "-") 'left-arrow)
             ))
-
-;(use-package protobug-mode)
-(add-hook 'protobuf-mode-hook
-          (lambda()
-            (message "Running protobuf-mode-hook")
-            (smartparens-mode) ;; smartparens must be below electric-*-modes
-            (show-paren-mode)
-            (subword-mode)
-            (glasses-mode)))
 
 (use-package inf-mongo
   :ensure t
@@ -819,7 +765,7 @@
 
 ;;(electric-indent-mode -1)
 
-(add-hook 'java-mode-hook #'lsp)
+;;(add-hook 'java-mode-hook #'lsp)
 ;; (add-hook 'java-mode-hook (lambda()
 ;;                             (message "Running java-mode-hook")
 ;;                             (electric-indent-mode)
@@ -853,38 +799,9 @@
  '(vc-state-base ((t (:foreground "RosyBrown1"))))
  '(vc-up-to-date-state ((t (:foreground "chartreuse3")))))
 
-;;-(global-linum-mode 1)
-;;(beacon-mode 1)
-(setq beacon-color 0.4)
-
-(setq ring-bell-function 'ignore)
-
-;; set up ace-jump-mode
-;;-(add-to-list 'load-path "~/.emacs.d/elpa/ace-jump-mode-20140616.115/")
-;;-(require 'ace-jump-mode)
-;;(define-key global-map (kbd "C-c C-SPC" ) 'ace-jump-mode)
-
-(add-to-list 'load-path (concat user-emacs-directory "ensime-emacs"))
-
 (use-package ace-jump-zap
-  :ensure t)
-
-(define-key global-map (kbd "C-z" ) `ace-jump-zap-up-to-char)
-
-;; set up ido mode
-;;(require `ido)
-;;(setq ido-enable-flex-matching t)
-;;(setq ido-everywhere t)
-;;(ido-mode 1)
-
-;; (defun bind-ido-keys ()
-;;   "Keybindings for ido mode."
-;;   (define-key ido-completion-map "\C-p" 'ido-prev-match)
-;;   (define-key ido-completion-map "\C-n" 'ido-next-match))
-
-;; (add-hook 'ido-setup-hook #'bind-ido-keys)
-
-;;(global-unset-key (kbd "C-z"))
+  :ensure t
+  :bind (("C-z" . ace-jump-zap-up-to-char)))
 
 (global-set-key (kbd "ESC ESC") 'keyboard-escape-quit) ;; Rebind from ESC ESC ESC
 (global-set-key (kbd "s-s") `replace-string)
@@ -893,151 +810,19 @@
 (global-set-key (kbd "M-z") `look-for-thing-at-point)
 ;;(global-set-key (kbd "C-c b") `ido-switch-buffer)                   ;; Broken x fix
 (global-set-key (kbd "C-c b") `counsel-switch-buffer)
-(global-set-key (kbd "C-c s") `save-some-buffers)                     ;; Broken x fix
-(global-set-key (kbd "C-c C-s") `save-buffer)                         ;; Broken x fix
-;;(global-set-key (kbd "C-c k") `ido-kill-buffer)                       ;; Broken x fix
-(global-set-key (kbd "C-c 1") `zygospore-toggle-delete-other-windows) ;; Broken x fix
+(global-set-key (kbd "C-c s") `save-some-buffers)
+(global-set-key (kbd "C-c C-s") `save-buffer)
+(global-set-key (kbd "C-c 1") `zygospore-toggle-delete-other-windows)
 (global-set-key (kbd "M-X") `smex-major-mode-commands)
 ;; This is your old M-x.
 (global-set-key (kbd "C-c C-c M-x") `execute-extended-command)
 (global-set-key (kbd "M-o") `other-window)
 (global-set-key (kbd "s-W") `toggle-truncate-lines)
 
-
-;; Haskell
-;;(autoload 'ghc-init "ghc" nil t)
-;;(autoload 'ghc-debug "ghc" nil t)
-;;(add-hook 'haskell-mode-hook (lambda () (ghc-init)))
-;; (add-hook 'haskell-mode-hook
-;;   (lambda ()
-;;     (setq company-backends '(company-ghc))))
-
-;; (use-package ghc
-;;   :disabled t
-;;   :ensure t
-;;   :init (ghc-init))
-
-(use-package anzu
-  :commands (isearch-foward isearch-backward)
-  :config (global-anzu-mode))
-
-;; (use-package haskell-customize
-;;   :after haskell-mode
-;;   :config
-;;   (progn
-;;     (setq haskell-process-args-stack-ghci '("--ghci-options=-ferror-spans -fshow-loaded-modules" "--no-build" "--no-load"))
-;;     ))
-
-;; (use-package company-ghc
-;;   :ensure t
-;;   :config
-;;   (add-to-list 'company-backends
-;;                '(company-ghc :with company-dabbrev-code))
-;;   (custom-set-variables '(company-ghc-show-info t)))
-
-;; (add-to-list 'company-backends 'company-ghc)
-
-;; (use-package company-quickhelp
-;;   :config
-;;   (company-quickhelp-mode 1))!
-
-;;hindent - format haskell code automatically
-;;https://github.com/chrisdone/hindent
-;; (when (executable-find "hindent")
-;;   (use-package hindent
-;;     ;;:diminish hindent-mode
-;;     :config
-;;     (add-hook 'haskell-mode-hook #'hindent-mode)
-;;     ;;(setq hindent-reformat-buffer-on-save t)
-;;     ))
-
-
-;; (use-package dante
-;;   :ensure t
-;;   :after haskell-mode
-;;   :commands 'dante-mode
-;;   :init
-;;   (add-hook 'haskell-mode-hook 'dante-mode)
-;;   (add-hook 'haskell-mode-hook 'flycheck-mode))
-
-
-
-(use-package haskell-mode
-  :config
-  (setq haskell-stylish-on-save t)
-  ;;(setq hs-lint-replace-with-suggestions t)
-  ;;(setq compilation-skip-threshold 1)
-  ;;(bind-key "C-x 4 s" `my-ghci:switch-to-ghci-buffer haskell-mode-map)
-  ;;(bind-key "s-F" `ahh:projectile-ag-regexp haskell-mode-map)
-  :bind (:map haskell-mode-map
-              ("M-n" . flymake-goto-next-error)
-              ("M-p" . flymake-goto-prev-error)
-              ("C-x 4 s" . sgm:switch-to-ghci-buffer)
-              ("C-c v" . sgm:run-hydra)
-              ("C-c e" . sgm:next-error)
-              ("s-F" . ahh:projectile-ag-regexp)))
-
-;; (use-package json-mode
-;;   :config
-;;   (local-unset-key [(control meta ?x)]))
-
-(use-package json-mode
-  :config
-  :bind (:map json-mode-map
-              ("C-c C-c" . upload-template)
-              ("C-c C-o" . open-template-in-browser)))
-
-(add-hook 'json-mode-hook (lambda ()
-                               (subword-mode)
-                               (glasses-mode)
-                               (smartparens-mode)
-                               (company-mode)
-                               (rainbow-delimiters-mode)
-                               (yas-minor-mode)))
-
-
-;; (use-package hs-lint
-;;   :config
-;;   (setq compilation-skip-threshold 1)
-;;   (put 'hs-lint-command 'safe-local-variable
-;;      (lambda (command)
-;;        (stringp command)))
-;;   (defun hs-lint-all ()
-;;     "Run HLint for all source files in stack project"
-;;     (interactive)
-;;     (save-some-buffers hs-lint-save-files)
-
-;;     (let ((default-directory (progn (sgm:find-root)
-;;                                     (if sgm:buffer-project-root
-;;                                         sgm:buffer-project-root
-;;                                       default-directory))))
-;;       (compilation-start (concat hs-lint-command " .")
-;;                         'hs-lint-mode))))
-
-(add-hook 'haskell-mode-hook (lambda ()
-                               ;;(setq flymake-log-level 3)
-                               ;;(set (make-local-variable 'flymake-err-line-patterns) '(("^\\(.*\.hs\\):\\([0-9]+\\):\\([0-9]+\\): \\(.*\\(?:\n.+\\)+\\)" 1 2 3 4)))
-                               (subword-mode)
-                               ;;(interactive-haskell-mode)
-                               (glasses-mode)
-                               (haskell-indentation-mode)
-                               (smartparens-mode)
-                               (company-mode)
-                               (rainbow-delimiters-mode)
-                               ;;(add-hook 'before-save-hook 'sgm:check-modified-buffers)
-                               ;;(flymake-mode)
-                               ;;(flymake-hlint-load)
-                               ;;(hlint-refactor-mode)
-                               ;;(ghc-init)
-                               ))
-
-
-
-
 (use-package web-mode
-  :ensure t)
-
-(add-to-list 'auto-mode-alist '("\\.scala.html\\'" . web-mode))
+  :ensure t
+  :init
+  (add-to-list 'auto-mode-alist '("\\.scala.html\\'" . web-mode)))
 
 (add-hook 'web-mode-hook (lambda ()
                            (setq electric-indent-inhibit t)
@@ -1046,40 +831,6 @@
                            (smartparens-mode)
                            (company-mode)
                            (rainbow-delimiters-mode)))
-
-;; (use-package intero
-;;   :ensure t
-;;   :init
-;;   (add-hook 'haskell-mode-hook (lambda ()
-;;                                  (intero-mode)
-;;                                  (subword-mode)
-;;                                  (smartparens-mode)
-;;                                  (company-mode)
-;;                                  (rainbow-delimiters-mode)))
-;;  :config
-;;  (bind-key "M-n" `flycheck-next-error intero-mode-map)
-;;  (bind-key "M-p" `flycheck-previous-error intero-mode-map))
-
-;; mess with highlighting
-;; (when (executable-find "structured-haskell-mode")
-;;   (use-package shm
-;;     :config
-;;     (add-hook 'haskell-mode-hook #'structured-haskell-mode)))
-
-;; (add-hook 'haskell-mode-hook (lambda ()
-;;                                (subword-mode)
-;;                                (interactive-haskell-mode)
-;;                                (haskell-indentation-mode)
-;;                                (smartparens-mode)
-;;                                (company-mode)
-;;                                (rainbow-delimiters-mode)
-;;                                (ghc-init)))
-
-;; (add-hook 'haskell-interactive-mode-hook (lambda ()
-;;                                            (subword-mode)
-;;                                            (smartparens-mode)
-;;                                            (rainbow-delimiters-mode)
-;;                                            (company-mode)))
 
 (add-hook 'minibuffer-setup-hook #'subword-mode)
 
@@ -1221,22 +972,6 @@
 ;;   (progn
 ;;     (eyebrowse-mode t)))
 
-;; (use-package nix-sandbox)
-
-;; (use-package nix-mode
-;;   :mode "\\.nix\\'"
-;;   :config
-
-;;   (use-package nixos-options
-;;     :config
-;;     (use-package company-nixos-options)
-;;     (add-to-list 'company-backends 'company-nixos-options)))
-
-;; (add-hook 'nix-mode-hook (lambda ()
-;;                            (company-mode)))
-
-;; (use-package nixos-options)
-
 ;;;; taken from https://github.com/bbatsov/prelude/blob/05dc795f2befb192f6ab16ef66fbb632ca2e3189/core/prelude-core.el#L138
 (defun my/smarter-move-beginning-of-line (arg)
   "Move point back to indentation of beginning of line.
@@ -1302,111 +1037,9 @@ point reaches the beginning or end of the buffer, stop there."
 (set-face-attribute 'region nil :background "DeepPink4")
 (set-face-attribute 'region nil :background "DeepPink4")
 
-
-;; (use-package 0blayout
-;;   :ensure t
-
-;;   ;; Optionally set default layout name
-;;   :init (setq-default 0blayout-default "my-default-layout-name")
-
-;;   ;; Load the mode
-;;   :config (0blayout-mode t))
-
+(put 'list-timers 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
-
-(fset 'Search\ for\ text\ from\ cursor\ to\ end\ of\ line
-   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([11 67108911 8388678 1 25 12 11 return] 0 "%d")) arg)))
-
-
-(fset 'search-for-class-json-format
-   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([134217830 134217830 6 134217751 8388678 1 99 108 97 115 115 32 return] 0 "%d")) arg)))
-
-;; (defun mac-switch-meta nil
-;;   "switch meta between Option and Command"
-;;   (interactive)
-;;   (if (eq mac-option-modifier nil)
-;;       (progn
-;; 	(setq mac-option-modifier 'meta)
-;; 	(setq mac-command-modifier 'hyper)
-;; 	)
-;;     (progn
-;;       (setq mac-option-modifier nil)
-;;       (setq mac-command-modifier 'meta))))
-;;
-;; (mac-switch-meta)
-
-;; (load-file (let ((coding-system-for-read 'utf-8))
-;;                 (shell-command-to-string "agda-mode locate")))
-(put 'list-timers 'disabled nil)
-
-(use-package glsl-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.shader\\'" . glsl-mode))
-  (setq glsl-additional-keywords '("shader_type")
-        glsl-additional-built-ins
-        '(
-          "TIME"
-          "UV" "COLOR" "TEXTURE" "WORLD_MATRIX" "EXTRA_MATRIX" "PROJECTION_MATRIX" "INSTANCE_CUSTOM" "AT_LIGHT_PASS" "VERTEX" "TEXTURE_PIXEL_SIZE" "MODULATE" "POINT_SIZE" "FRAGCOORD"
-          "NORMAL" "NORMALMAP" "NORMALMAP_DEPTH" "NORMAL_TEXTURE" "SCREEN_UV" "SCREEN_PIXEL_SIZE" "POINT_COORD" "SCREEN_TEXTURE"
-          "LIGHT_VEC" "SHADOW_VEC" "LIGHT_HEIGHT" "LIGHT_COLOR" "LIGHT_UV" "SHADOW_COLOR" "LIGHT"
-          ))
-  :config
-  (setq c-basic-offset 4)
-  :bind (:map glsl-mode-map
-              ("C-c r" . gdscript-hydra-show)
-              ("C-c C-r C-o" . glsl-find-man-page))
-  :hook ((glsl-mode . (lambda ()
-                        (setq tab-width 4)))
-         (glsl-mode . smartparens-mode)
-         (glsl-mode . subword-mode))
-  )
-
-(use-package gdscript-mode
-  :config
-  (setq
-   gdscript-docs-force-online-lookup t
-   gdscript-godot-executable "/Applications/Godot.app/Contents/MacOS/Godot"
-   ;;gdscript-godot-executable "/Users/pepa/develop-godot/godot/bin/godot.osx.tools.64"
-   gdscript-indent-guess-indent-offset nil
-   gdscript-gdformat-line-length 120
-   gdscript-gdformat-save-and-format t
-   gdscript-debug-emacs-executable "Emacs-27.1"
-   rg-custom-type-aliases '(("gdscript" ."*.gd *.tscn")))
-
-
-  :bind (:map
-         gdscript-mode-map
-         ("C-c v" . gdscript-hydra-show)
-         ("C-c C-r C-a" . gdscript-docs-browse-api)
-         ("C-c C-r C-o" . gdscript-docs-browse-symbol-at-point)
-         :map
-         gdscript-comint--mode-map
-         ("C-c v" . gdscript-hydra-show)
-         ("C-c C-v" . comint-clear-buffer)
-         :map
-         gdscript-debug--inspector-mode-map
-         ("C-c C-r C-o" . gdscript-docs-browse-symbol-at-point)
-         :map
-         gdscript-debug--scene-tree-mode-map
-         ("C-c C-r C-o" . gdscript-docs-browse-symbol-at-point)
-         :map
-         gdscript-debug--stack-frame-vars-mode-map
-         ("C-c C-r C-o" . gdscript-docs-browse-symbol-at-point))
-
-  :hook ((gdscript-mode . smartparens-mode)
-         (gdscript-mode . subword-mode)
-         ;;(gdscript-mode . lsp)
-         ;; (eww-after-render . (lambda ()
-         ;;                       (gdscript-documentation-rename-eww-buffer)
-         ;;                       (setq multi-isearch-next-buffer-function nil)))
-         ))
-
-;; (defun save-buffer-before-hydra ()
-;;   (unless (derived-mode-p 'godot-mode)
-;;     (save-buffer)))
-
-;;(advice-add 'gdscript-hydra-show :before #'save-buffer-before-hydra)
 
 (use-package eww
   :config
@@ -1426,12 +1059,6 @@ point reaches the beginning or end of the buffer, stop there."
   :custom-face
   (highlight ((t (:background "dark cyan")))) ;; this is global change. To make it local: https://emacs.stackexchange.com/questions/2957/how-to-customize-syntax-highlight-for-just-a-given-mode
   )
-
-(use-package restclient-mode
-  :hook ((restclient-mode . smartparens-mode)
-         (restclient-mode . subword-mode))
-  :bind (:map
-         restclient-mode-map ("C-c C-o" . open-template-in-browser)))
 
 ;; (use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration))
 ;;   :config (setq lsp-completion-enable-additional-text-edit nil))
