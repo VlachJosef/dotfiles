@@ -383,6 +383,9 @@
 (use-package hydra
   :ensure t)
 
+(use-package request
+  :ensure t)
+
 (use-package graphql-mode
   :ensure t)
 
@@ -492,6 +495,9 @@
 ;;-  :bind ("C-c C-k" . git-gutter:popup-hunk)
 ;;-  :bind ("C-c C-j" . git-gutter:revert-hunk))
 
+(use-package git-timemachine
+  :ensure t)
+
 (use-package magit
   :ensure t
   :init
@@ -511,6 +517,9 @@
             (show-paren-mode)
             (subword-mode)
             (glasses-mode)))
+
+(use-package markdown-mode
+  :ensure t)
 
 (add-hook 'markdown-mode-hook
           (lambda ()
@@ -735,6 +744,7 @@
          ("C-c r" . spark-package)))
 
 (use-package println-debugger
+  :straight (println-debugger :type git :host github :repo "VlachJosef/println-debugger")
   :bind (:map
          global-map ("C-x C-k P" . print-ln) ;; fallback while when package is unstable
          :map
@@ -748,11 +758,11 @@
          ([remap sp-next-sexp] . println-insert-after)
          ("C-M-p" . println-insert-before)
          ("C-M-n" . println-insert-after)
-         :map gdscript-mode-map
-         ([remap sp-previous-sexp] . println-insert-before)
-         ([remap sp-next-sexp] . println-insert-after)
-         ("C-M-p" . println-insert-before)
-         ("C-M-n" . println-insert-after)
+         ;; :map gdscript-mode-map
+         ;; ([remap sp-previous-sexp] . println-insert-before)
+         ;; ([remap sp-next-sexp] . println-insert-after)
+         ;; ("C-M-p" . println-insert-before)
+         ;; ("C-M-n" . println-insert-after)
          :map js-mode-map
          ([remap sp-previous-sexp] . println-insert-before)
          ([remap sp-next-sexp] . println-insert-after)
