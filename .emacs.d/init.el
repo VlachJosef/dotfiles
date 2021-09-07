@@ -543,7 +543,7 @@
 ;;(setq ido-vertical-define-keys 'C-n-and-C-p-only)
 
 ;; inspiration https://github.com/rmm5t/dotfiles/blob/df77009c326a9d09f23e7bedcd44e9658f26bc6f/emacs.d/init.el
-(load "~/.emacs.d/personal/defuns")
+(load (expand-file-name "personal/defuns" user-emacs-directory))
 ;;(load "~/.emacs.d/personal/pure360")
 ;;(load "~/.emacs.d/lambdacalc.el")
 
