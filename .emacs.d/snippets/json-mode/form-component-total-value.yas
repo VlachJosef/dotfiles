@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# name: total value - form component
+# binding: C-c C-v C-t
+# key: total
+# group: gform
+# --
+`(is-first-object)`{
+  "id": "$1",
+  "type": "text",
+  "format": "shortText",
+  "label": "$2",
+  "value": "$3",
+  "submitMode": "readonly",
+  "presentationHint": "totalValue"
+}`(is-last-object)`
