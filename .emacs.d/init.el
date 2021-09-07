@@ -209,6 +209,11 @@
 (use-package scala-import
   :straight (scala-import :type git :host github :repo "VlachJosef/scala-import"))
 
+(use-package sbt-switcher
+  :after (sbt-mode)
+  :straight (sbt-switcher :type git :host github :repo "VlachJosef/sbt-switcher")
+  :bind (("C-x 4 s" . sbt-switcher:sbt)))
+
 ;;-(require 'smex)
 ;;-(smex-initialize)
 ;;(require 'ghcid)
@@ -293,8 +298,6 @@
 ;;               (goto-address-mode)))
 ;;   (bind-key "C-x 4 s" `sgm:switch-to-ghci-buffer simple-ghci-mode-map) ;; This doesn't override entry in global-map done in defuns.el
 ;;   (bind-key "s-F" `ahh:projectile-ag-regexp))
-
-;;(use-package sbt-or-ghci)
 
 (use-package color-identifiers-mode
   :ensure t
@@ -384,6 +387,9 @@
   :ensure t)
 
 (use-package transpose-frame
+  :ensure t)
+
+(use-package json-mode
   :ensure t)
 
 ;; (use-package move-dup

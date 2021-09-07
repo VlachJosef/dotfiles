@@ -61,7 +61,6 @@ Prefix arguments:
 (define-key global-map (kbd "s-i" ) 'search-import)
 
 ;;(define-key global-map (kbd "C-x 4 s" ) `sbt-switch-to-active-sbt-buffer)
-(define-key global-map (kbd "C-x 4 s" ) 'sbt-or-sgm:sbt-or-ghci)
 
 ;; Taken from
 ;; https://www.emacswiki.org/emacs/KeyboardMacrosTricks
