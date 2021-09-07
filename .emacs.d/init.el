@@ -610,14 +610,6 @@
 ;;(setenv "PATH" (concat "/Users/pepa/bin/:" (getenv "PATH")))
 ;;(setenv "PATH" (shell-command-to-string "source ~/.bashrc; echo -n $PATH"))
 
-(load-theme 'zenburn :no-confirm)
-
-(add-to-list 'load-path (concat user-emacs-directory "apib-mode"))
-
-(autoload 'apib-mode "apib-mode"
-        "Major mode for editing API Blueprint files" t)
-(add-to-list 'auto-mode-alist '("\\.apib\\'" . apib-mode))
-
 (use-package tramp) ;; needed by crux
 
 (use-package crux
@@ -840,14 +832,6 @@
 ;;                             (define-key yas-minor-mode-map [tab] #'yas-expand)
 
 ;;                             ))
-
-(add-hook 'apib-mode-hook
-          (lambda()
-            (message "Running apib-mode-hook")
-            (smartparens-mode) ;; smartparens must be below electric-*-modes
-            (show-paren-mode)
-            (subword-mode)
-            (glasses-mode)))
 
 ;; == Useful commands ==
 ;; (list-faces-display)
