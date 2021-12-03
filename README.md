@@ -13,3 +13,8 @@ To remove the symlinks:
 cd ~/.dotfiles
 stow -D .
 ```
+
+
+```
+em272 --with-profile=test
+```

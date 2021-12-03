@@ -6,3 +6,10 @@
 history
 recentf
 straight/
+bookmarks
+projectile-bookmarks.eld
+projectile.cache
+request/
+transient/
+url/
+var/

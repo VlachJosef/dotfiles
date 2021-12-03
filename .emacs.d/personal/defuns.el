@@ -1,6 +1,7 @@
 ;;; Personal functions
 
 (require 'cl-lib)
+(require 's)
 
 (defun normalize-import (import)
   (let* ((normalized (s-replace " " "" (s-collapse-whitespace import)))
@@ -51,7 +52,7 @@ Prefix arguments:
 	       (import (with-temp-buffer
 			 (insert (mapconcat (lambda (elm) (s-trim-left elm)) lines "\n"))
 			 (sort-lines nil (point-min) (point-max))
-			 (ivy-completing-read "Select an import: " (funcall normalization-function (split-string (buffer-string) "\n") search-term) nil nil (concat "." search-term "$")))))
+			 (completing-read "Select an import: " (funcall normalization-function (split-string (buffer-string) "\n") search-term) nil nil search-term))))
 	  (if copy-to-kill-ring
 	      (progn (kill-new (format "import %s" import))
 		     (message "%s added to kill ring" import))
@@ -85,22 +86,20 @@ Prefix arguments:
 	  (rest-of-letters (substring string 1)))
       (format "%s%s" (downcase first-letter) rest-of-letters))))
 
+(defun current-scala-symbol (minibuffer-content)
+  (cond ((string-match "^\\#\\(def\\|val\\|new\\|class\\|trait\\|object\\|type\\)\\\\s\\([^[]*\\)" minibuffer-content)
+         (cons (match-string 1 minibuffer-content) (match-string 2 minibuffer-content)))
+        ((string-match "^\\#\\(.*\\)" minibuffer-content)
+         (cons nil (match-string 1 minibuffer-content)))))
+
 (defun insert-or-replace-word (scala-symbol)
-  (let ((search-for (string-match ".*rg: \\(.*\\)" (minibuffer-prompt)))
-        (result (match-string-no-properties 1)))
-    (when (string= "" (minibuffer-contents-no-properties))
-      (insert (format "%s" result)))
-    (save-excursion
-      (move-beginning-of-line 1)
-      (let ((defs '(new class object trait val def type)))
-        (let ((name (symbol-name scala-symbol))
-              (name-at-point (symbol-at-point)))
-          (cond ((member name-at-point defs)
-                 (delete-region (beginning-of-thing 'symbol) (+ 1 (end-of-thing 'symbol)))
-                 (when (not (equal scala-symbol name-at-point))
-                   (insert (format "%s " name))))
-                (t
-                 (insert (format "%s " name)))))))))
+  (let* ((current-match-data (current-scala-symbol (minibuffer-contents-no-properties)))
+         (minibuffer-scala-symbol (car current-match-data))
+         (search-term (cdr current-match-data)))
+    (delete-minibuffer-contents)
+    (if (string= minibuffer-scala-symbol (symbol-name scala-symbol))
+	(insert (format "#%s" search-term))
+      (insert (format "#%s\\s%s[\\\\[(\\ :]" scala-symbol search-term)))))
 
 (defun delete-word ()
   (save-excursion
@@ -128,7 +127,7 @@ Search for _n_ new _c_ class _t_ trait _o_ object _v_ val _d_ def _y_ type _q_ q
        (or (sbt:find-root)
            (string= default-directory "/Users/pepa/develop-itv/bruce/")) ;; projectile root and sbt root differs for bruce-service differs
        ;;(string-match ".*rg ?(app)*?:.*" (minibuffer-prompt)))
-       (string-match ".*rg.*" (minibuffer-prompt)))
+       (string-match ".*Ripgrep.*" (minibuffer-prompt)))
       (scala-minibuffer-search/body)))
 
 (add-hook 'minibuffer-setup-hook 'mini-hook)
@@ -359,6 +358,7 @@ Rest client: _s_ last _d_ open _r_ reset _q_ quit"
 (defconst gform-environments
   '("http://localhost:9196/gform/formtemplates"
     "http://localhost:9396/gform/formtemplates"
+    "https://www.development.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"
     "https://www.qa.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"
     "https://www.staging.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"))
 
@@ -421,7 +421,6 @@ Rest client: _s_ last _d_ open _r_ reset _q_ quit"
 POST %s
 Content-Type: application/json; charset=utf-8
 Csrf-Token: nocheck
-X-requested-with: foo
 
 " gform-last-url))
       (insert json)
@@ -434,6 +433,7 @@ X-requested-with: foo
 (defconst gform-environments-new-form
   '("http://localhost/submissions/new-form/"
     "http://localhost:9295/submissions/new-form/"
+    "https://www.development.tax.service.gov.uk/submissions/new-form/"
     "https://www.qa.tax.service.gov.uk/submissions/new-form/"
     "https://www.staging.tax.service.gov.uk/submissions/new-form/"))
 
@@ -660,13 +660,13 @@ prompt additionally for EXTRA-AG-ARGS."
     (setq literal-counsel-rg-p (not literal-counsel-rg-p))
     (look-for-thing-at-point)))
 
-(defun my-action-1 (x)
-  (message "action-1: %s" x))
+;; (defun my-action-1 (x)
+;;   (message "action-1: %s" x))
 
-(ivy-set-actions
- 'counsel-rg
- '(("m" whole-project-search "search in whole project")
-   ("l" literal-vanilla-rg-toggle "literal / vanilla rg")))
+;; (ivy-set-actions
+;;  'counsel-rg
+;;  '(("m" whole-project-search "search in whole project")
+;;    ("l" literal-vanilla-rg-toggle "literal / vanilla rg")))
 
 (defun ivy-switch-buffer-plain ()
   (interactive)
@@ -728,3 +728,65 @@ prompt additionally for EXTRA-AG-ARGS."
         (ediff-buffers buffer-a buffer-b)
       (message "No available buffers to compare. Setting to `restclient-same-buffer-response' to nil")
       (setq restclient-same-buffer-response nil))))
+
+(defun run-comparator ()
+  (let* ((default-directory "/Users/pepa/develop-itv/betty-tools/tools/amm-scripts/")
+         (compare-candidates (seq-filter (lambda (buffer)
+                                           (eq 0 (string-match "*HTTP GET" (buffer-name buffer))))
+                                         (buffer-list)))
+         (buffer-a (car compare-candidates))
+         (buffer-b (cadr compare-candidates)))
+    (if (and buffer-a buffer-b)
+        (progn
+          (setenv "ARTIFACTORY_USERNAME" "josevlac")
+          (setenv "ARTIFACTORY_PASSWORD" "gYhfh]$A+<zdM+n4YN_V")
+          (with-current-buffer (get-buffer-create "*betty-bruce*")
+            (delete-region (point-min) (point-max))
+            (shell-command (format "amm MultiMain.sc '%s' '%s' '%s' '%s'"
+                                   (escape-single-quetes (buffer-content (flush-restmode-comments buffer-a)))
+                                   (buffer-identifier buffer-a)
+                                   (escape-single-quetes (buffer-content (flush-restmode-comments buffer-b)))
+                                   (buffer-identifier buffer-b))
+                           (current-buffer))
+            (switch-to-buffer (current-buffer))
+            (goto-char (point-max))
+            (insert "\n"
+                    (buffer-name buffer-a) "\n"
+                    (buffer-name buffer-b) "\n"))
+      (message "No available buffers to compare. Setting to `restclient-same-buffer-response' to nil")
+      (setq restclient-same-buffer-response nil)))))
+
+(defun buffer-identifier (buffer)
+  (let ((name (buffer-name buffer)))
+    (if (string-match "http[s]?://\\([^/]*\\).*<\\(.*\\)>" name)
+        (format "%s - <%s>" (match-string 1 name) (match-string 2 name))
+      name)))
+
+(defun flush-restmode-comments (buffer)
+  (with-current-buffer buffer
+    (goto-char (point-min))
+    (flush-lines "^/.*")
+    (current-buffer)))
+
+(defun escape-single-quetes (string)
+  (replace-regexp-in-string "'" "'\\''" string t t))
+
+(defun buffer-content (buffer-name)
+  (with-current-buffer buffer-name
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun bs-linear-schedule-notifications-e (schedule-programme-id production-id channel crud)
+  "SCHEDULE_PROGRAMME_ID equals to SLOT_ID from endpoint
+To get SCHEDULE_PROGRAMME_ID run https://scheduling-schedule-api.prd.bs.itv.com/schedules?productionNo=:production-id&scheduleType=S
+"
+
+  (let ((json-string
+         (json-serialize
+          (list 'scheduleProgrammeId schedule-programme-id
+                'channelCode channel
+                'scheduleDate "2021-12-26"
+                'scheduleTime "08:30"
+                'productionNumber production-id
+                'crud crud
+                'self (format "https://scheduling-schedule-api.prd.bs.itv.com/schedules?channelCode=%s&scheduleProgrammeId=%s" channel schedule-programme-id)))))
+    (replace-regexp-in-string "\"" "\\\"" json-string t t)))
