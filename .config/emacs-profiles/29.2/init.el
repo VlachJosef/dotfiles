@@ -511,8 +511,7 @@ point reaches the beginning or end of the buffer, stop there."
 
 (use-package rainbow-delimiters
   :ensure t
-  :init
-  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+  :hook prog-mode)
 
 (use-package info-colors
   :ensure t
