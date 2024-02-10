@@ -206,6 +206,21 @@ turns it off by setting optional `show-color' param of `symbol-overlay-maybe-cou
     (comment-or-uncomment-region
      (line-beginning-position)(line-end-position))))
 
+(defun pipa-other-buffer ()
+  "Switch to most recently visited buffer having same major-mode as
+current buffer which is not currently visible."
+  (interactive)
+  (with-current-buffer (current-buffer)
+    (let ((visible-buffers)
+          (buffers (match-buffers `(major-mode . ,major-mode))))
+      (walk-windows (lambda (window) (push (window-buffer window) visible-buffers))) ;; Let's remember currently visible buffers so we can skip them
+      (let ((other-buffers (match-buffers (lambda (buffer-or-name)
+                                            (not (memq buffer-or-name visible-buffers)))
+                                          buffers)))
+        (if other-buffers
+            (switch-to-buffer (car other-buffers) :norecord)
+          (message "No other '%s' buffer to visit" major-mode))))))
+
 (use-package emacs
   :bind (("C-c f" . recentf-open)
          ("M-o" . other-window) ;; (add-hook 'sgml-mode-hook (lambda () (keymap-set html-mode-map "\M-o" nil)))
@@ -219,7 +234,8 @@ turns it off by setting optional `show-color' param of `symbol-overlay-maybe-cou
          ([remap list-buffers] . consult-project-buffer) ;; C-x C-b
          ([remap switch-to-buffer] . consult-buffer) ;; C-x b
          ([remap goto-line] . consult-goto-line)
-         ([remap move-beginning-of-line] . my/smarter-move-beginning-of-line))
+         ([remap move-beginning-of-line] . my/smarter-move-beginning-of-line)
+         ([remap backward-list] . pipa-other-buffer))
   :custom
   (revert-without-query '(".*.scala$" ".*.ts$" ".*.tsx$")) ;; Revert scala files without asking.
   (next-error-verbose nil)
@@ -451,7 +467,8 @@ point reaches the beginning or end of the buffer, stop there."
   (keymap-global-set "s-]" 'sp-unwrap-sexp)
   (keymap-global-set "s-{" 'sp-rewrap-sexp)
   (keymap-set smartparens-mode-map "M-<backspace>" nil)
-  :bind ([remap sp-previous-sexp] . mode-line-other-buffer))
+  :bind ([remap sp-previous-sexp] . pipa-other-buffer))
+
 
 (use-package crux
   :ensure t
