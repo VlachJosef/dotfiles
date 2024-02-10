@@ -1,0 +1,60 @@
+layout {
+   default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+    tab name="rabbit/redis" {
+         pane {
+              cwd "/Users/pepa/develop-itv/sunnydale"
+              command "docker"
+              args "compose" "-f" "docker-compose-rabbit-redis.yml" "up"
+         }
+    }
+    tab name="postgres" {
+        pane {
+             cwd "/Users/pepa/develop-itv/silicon"
+             command "docker"
+             args "compose" "-f" "docker-compose-postgres.yml" "up"
+        }
+    }
+    tab name="localstack" {
+        pane {
+             cwd "/Users/pepa/develop-itv/silicon"
+             command "docker"
+             args "compose" "-f" "localstack.yaml" "up"
+        }
+    }
+    tab name="zookeeper" {
+         pane {
+              cwd "/Users/pepa/docker-kafka"
+              command "docker"
+              args "compose" "-f" "zookeper-arm.yml" "up"
+         }
+    }
+    tab name="kafka broker" start_suspended=true {
+         pane {
+              cwd "/Users/pepa/docker-kafka"
+              command "docker"
+              args "compose" "-f" "kafka-broker.yml" "up"
+         }
+    }
+    tab name="schema-registry" start_suspended=true {
+         pane {
+              cwd "/Users/pepa/docker-kafka"
+              command "docker"
+              args "compose" "-f" "schema-registry.yml" "up"
+         }
+    }
+    tab name="kafka-rest-proxy" start_suspended=true {
+         pane {
+              cwd "/Users/pepa/docker-kafka"
+              command "docker"
+              args "compose" "-f" "kafka-rest-proxy.yml" "up"
+         }
+    }
+}

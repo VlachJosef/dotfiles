@@ -66,17 +66,17 @@ Prefix arguments:
 ;; Taken from
 ;; https://www.emacswiki.org/emacs/KeyboardMacrosTricks
 (defun save-macro (name)
-    "save a macro. Take a name as argument
+  "save a macro. Take a name as argument
      and save the last defined macro under
      this name at the end of your .emacs"
-     (interactive "SName of the macro :")  ; ask for the name of the macro
-     (kmacro-name-last-macro name)         ; use this name for the macro
-     (find-file user-init-file)            ; open ~/.emacs or other user init file
-     (goto-char (point-max))               ; go to the end of the .emacs
-     (newline)                             ; insert a newline
-     (insert-kbd-macro name)               ; copy the macro
-     (newline)                             ; insert a newline
-     (switch-to-buffer nil))               ; return to the initial buffer
+  (interactive "SName of the macro :")  ; ask for the name of the macro
+  (kmacro-name-last-macro name)         ; use this name for the macro
+  (find-file user-init-file)            ; open ~/.emacs or other user init file
+  (goto-char (point-max))               ; go to the end of the .emacs
+  (newline)                             ; insert a newline
+  (insert-kbd-macro name)               ; copy the macro
+  (newline)                             ; insert a newline
+  (switch-to-buffer nil))               ; return to the initial buffer
 
 ;; Used by yasnippet generating Play json formatter - Json.format[Foo]
 (defun downcase-first-letter-only (string)
@@ -87,7 +87,7 @@ Prefix arguments:
       (format "%s%s" (downcase first-letter) rest-of-letters))))
 
 (defun current-scala-symbol (minibuffer-content)
-  (cond ((string-match "^\\#\\(def\\|val\\|new\\|class\\|trait\\|object\\|type\\)\\\\s\\([^[]*\\)" minibuffer-content)
+  (cond ((string-match "^\\#\\(def\\|val\\|new\\|class\\|trait\\|object\\|type\\|struct\\|enum\\|fn\\|impl\\)\\\\s\\([^[]*\\)" minibuffer-content)
          (cons (match-string 1 minibuffer-content) (match-string 2 minibuffer-content)))
         ((string-match "^\\#\\(.*\\)" minibuffer-content)
          (cons nil (match-string 1 minibuffer-content)))))
@@ -99,7 +99,7 @@ Prefix arguments:
     (delete-minibuffer-contents)
     (if (string= minibuffer-scala-symbol (symbol-name scala-symbol))
 	(insert (format "#%s" search-term))
-      (insert (format "#%s\\s%s[\\\\[(\\ :]" scala-symbol search-term)))))
+      (insert (format "#%s\\s%s[\\\\[(\\ :]?" scala-symbol search-term)))))
 
 (defun delete-word ()
   (save-excursion
@@ -112,25 +112,52 @@ Prefix arguments:
 (defhydra scala-minibuffer-search ()
   "
 Search for _n_ new _c_ class _t_ trait _o_ object _v_ val _d_ def _y_ type _q_ quit"
-    ("n" (insert-or-replace-word 'new) nil)
-    ("c" (insert-or-replace-word 'class) nil)
-    ("t" (insert-or-replace-word 'trait) nil)
-    ("o" (insert-or-replace-word 'object) nil)
-    ("d" (insert-or-replace-word 'def) nil)
-    ("v" (insert-or-replace-word 'val) nil)
-    ("y" (insert-or-replace-word 'type) nil)
-    ("q" (delete-word) nil :color blue))
+  ("n" (insert-or-replace-word 'new) nil)
+  ("c" (insert-or-replace-word 'class) nil)
+  ("t" (insert-or-replace-word 'trait) nil)
+  ("o" (insert-or-replace-word 'object) nil)
+  ("d" (insert-or-replace-word 'def) nil)
+  ("v" (insert-or-replace-word 'val) nil)
+  ("y" (insert-or-replace-word 'type) nil)
+  ("q" (delete-word) nil :color blue))
+
+(defhydra rust-minibuffer-search ()
+  "
+Search for _s_ struct _t_ trait _e_ enum _f_ fn _i_ impl _q_ quit"
+  ("s" (insert-or-replace-word 'struct) nil)
+  ("t" (insert-or-replace-word 'trait) nil)
+  ("e" (insert-or-replace-word 'enum) nil)
+  ("f" (insert-or-replace-word 'fn) nil)
+  ("i" (insert-or-replace-word 'impl) nil)
+  ("q" (delete-word) nil :color blue))
+
+
+(defun in-minibuffer-show-hydra()
+  (interactive)
+  (with-current-buffer (nth 1 (buffer-list))
+    (cond
+     ((derived-mode-p 'rust-mode)
+      (rust-minibuffer-search/body))
+     ((derived-mode-p 'scala-mode)
+      (scala-minibuffer-search/body)))))
 
 (defun mini-hook ()
-  (if (and
-       (functionp 'sbt:find-root)
-       (or (sbt:find-root)
-           (string= default-directory "/Users/pepa/develop-itv/bruce/")) ;; projectile root and sbt root differs for bruce-service differs
-       ;;(string-match ".*rg ?(app)*?:.*" (minibuffer-prompt)))
-       (string-match ".*Ripgrep.*" (minibuffer-prompt)))
-      (scala-minibuffer-search/body)))
+  (let ((non-minibuffer-buffer (nth 1 (buffer-list))))
+    (if (and
+         (with-current-buffer non-minibuffer-buffer (derived-mode-p 'rust-mode))
+         (string-match ".*Ripgrep.*" (minibuffer-prompt)))
+        (progn
+          (rust-minibuffer-search/body))
+      (when (and
+             (functionp 'sbt:find-root)
+             (sbt:find-root)
+             ;;(string-match ".*rg ?(app)*?:.*" (minibuffer-prompt)))
+             (string-match ".*Ripgrep.*" (minibuffer-prompt)))
+        (scala-minibuffer-search/body)))
+    ))
 
 (add-hook 'minibuffer-setup-hook 'mini-hook)
+;; (remove-hook 'minibuffer-setup-hook 'mini-hook)
 
 (defhydra run-mongo ()
   "
@@ -149,22 +176,22 @@ Run mongo: _r_ reset _s_ start _n_ start no-auth _e_ eof _t_ shell _q_ quit"
          (buffer (get-buffer buffer-name)))
     (if (and sbt-root buffer)
         (switch-to-buffer-other-window buffer)
-     (message "Not in sbt project."))))
+      (message "Not in sbt project."))))
 
 (defmacro with-shell-in-sbt-project (body)
   `(let* ((sbt-root (sbt:find-root))
           (buffer-name (format "*shell* %s" sbt-root))
           (buffer (get-buffer buffer-name)))
      (if sbt-root
-       (progn
-         (unless buffer
-           (with-current-buffer (shell)
-             (rename-buffer buffer-name)
-             (comint-send-string (current-buffer) (concat "invoked-from-directory " sbt-root "\n"))
-             (setq buffer (current-buffer))))
-         (with-current-buffer buffer
-           ,body))
-     (message "Not in sbt project."))))
+         (progn
+           (unless buffer
+             (with-current-buffer (shell)
+               (rename-buffer buffer-name)
+               (comint-send-string (current-buffer) (concat "invoked-from-directory " sbt-root "\n"))
+               (setq buffer (current-buffer))))
+           (with-current-buffer buffer
+             ,body))
+       (message "Not in sbt project."))))
 
 (defun send-eof ()
   (with-shell-in-sbt-project
@@ -178,74 +205,27 @@ Run mongo: _r_ reset _s_ start _n_ start no-auth _e_ eof _t_ shell _q_ quit"
 (defun restclient-suppress-by-default ()
   (interactive)
   (pcase current-prefix-arg
-      (`nil (define-key restclient-mode-map [remap restclient-http-send-current-suppress-response-buffer] 'restclient-http-send-current)
-            (define-key restclient-mode-map [remap restclient-http-send-current] 'restclient-http-send-current-suppress-response-buffer)
-            (message "rest-mode C-c command remapped."))
-      (`(,n . nil) ;; run with C-u
-       (define-key restclient-mode-map [remap restclient-http-send-current-suppress-response-buffer] nil)
-       (define-key restclient-mode-map [remap restclient-http-send-current] nil)
-       (message "rest-mode commands keys has been reseted."))))
-
-(defvar restclient:current-rest-calls-buffer nil)
-
-(defun restclient:call-last ()
-  (let ((cb (if restclient:current-rest-calls-buffer
-                restclient:current-rest-calls-buffer
-              (ido-completing-read "Switch to rest calls buffer: "
-                                   (cl-loop for buffer being the buffers
-                                            when (string-match "^restCalls.*" (buffer-name buffer))
-                                            collect (buffer-name buffer) into file-buffers
-                                            finally return file-buffers)))))
-    (setq restclient:current-rest-calls-buffer cb)
-    (with-current-buffer cb
-      (restclient-http-send-current-suppress-response-buffer))))
-
-(defun restclient:open-current-rest-calls ()
-  (if restclient:current-rest-calls-buffer
-      (switch-to-buffer-other-window restclient:current-rest-calls-buffer)
-    (message "No restCall buffer to open."))
-  )
-
-(defun restclient:reset-open-current-rest-calls ()
-  (setq restclient:current-rest-calls-buffer nil)
-  (message "restclient:current-rest-calls-buffer set to nil."))
-
-(defun restclient:save-some-buffer-and-make-rest-call ()
-  (interactive)
-  (pcase current-prefix-arg
-    (`nil
-     (if (equal (save-some-buffers) "(No files need saving)")
-         (restclient:call-last)
-       (restclient:hydra/body)))
+    (`nil (define-key restclient-mode-map [remap restclient-http-send-current-suppress-response-buffer] 'restclient-http-send-current)
+          (define-key restclient-mode-map [remap restclient-http-send-current] 'restclient-http-send-current-suppress-response-buffer)
+          (message "rest-mode C-c command remapped."))
     (`(,n . nil) ;; run with C-u
-     (restclient:hydra/body))))
+     (define-key restclient-mode-map [remap restclient-http-send-current-suppress-response-buffer] nil)
+     (define-key restclient-mode-map [remap restclient-http-send-current] nil)
+     (message "rest-mode commands keys has been reseted."))))
 
-(defun restclient:save-single-buffer-and-make-rest-call ()
+(defvar restclient:last-calls-args nil)
+
+(defun restclient:save-call (orig-fun &rest args)
+  (setq restclient:last-calls-args args)
+  (apply orig-fun args))
+
+(defun restclient:repeat-last-call ()
   (interactive)
-  (pcase current-prefix-arg
-    (`nil
-     (cond ((string-match "^*sbt*" (buffer-name))
-            (restclient:call-last))
-           ((equal (progn
-                      (setq current-prefix-arg '(4)) ; C-u
-                      (basic-save-buffer)) "(No changes need to be saved)")
-            (restclient:call-last))
-           (t
-            (restclient:hydra/body))))
-    (`(,n . nil) ;; run with C-u
-     (restclient:hydra/body))))
+  (if (null restclient:last-calls-args)
+      (message "No previous restmode call found.")
+    (apply #'restclient-http-do restclient:last-calls-args)))
 
-;;(bind-key "C-c s" 'restclient:save-some-buffer-and-make-rest-callb)
-;;(bind-key "C-c C-s" 'restclient:save-single-buffer-and-make-rest-call)
-;;(bind-key "C-c C-s" 'resend-last)
-
-(defhydra restclient:hydra ()
-  "
-Rest client: _s_ last _d_ open _r_ reset _q_ quit"
-  ("s" (restclient:call-last) nil :color blue)
-  ("d" (restclient:open-current-rest-calls) nil :color blue)
-  ("r" (restclient:reset-open-current-rest-calls) nil)
-  ("q" nil nil :color blue))
+(advice-add 'restclient-http-do :around #'restclient:save-call)
 
 (defun tut-toggle-between-scala-and-markdown()
   (interactive)
@@ -279,39 +259,6 @@ Rest client: _s_ last _d_ open _r_ reset _q_ quit"
              (insert buffer-string)
              (goto-char point))))))
 
-
-(defun defly ()
-  (interactive)
-  (let* ((cmd-and-args (funcall (flymake-get-init-function buffer-file-name)))
-         (cmd          (nth 0 cmd-and-args))
-         (args         (nth 1 cmd-and-args))
-         (dir          (nth 2 cmd-and-args))
-         (process (apply 'start-file-process
-                         "flymake-proc-2" (current-buffer) cmd args)))
-
-    (set-process-sentinel process 'my-flymake-process-sentinel)
-    (set-process-filter process 'my-flymake-process-filter)
-    (message "cmd: %s" cmd)
-    (message "args: %s" args)
-    ;;(message "dir: %s" dir)
-    )
-
-)
-
-(defun my-flymake-process-sentinel (process _event)
-  "Sentinel for syntax check buffers."
-  (message "my-flymake-process-sentinel process: %s" process)
-  (message "my-flymake-process-sentinel _event : %s" _event)
-   (when (memq (process-status process) '(signal exit))
-     (message "HAHAHAHAHAHAHHAHAH")
-     )
-  )
-
-(defun my-flymake-process-filter (process output)
-  (message "my-flymake-process-filter process: %s" process)
-  (message "my-flymake-process-filter output : %s" output)
-  )
-
 (defun no-test-line ()
   (interactive)
   (let ((inhibit-read-only t))
@@ -335,32 +282,13 @@ Rest client: _s_ last _d_ open _r_ reset _q_ quit"
           (setq result (cons element result)))))
     (reverse result)))
 
-(defun browse-kill-ring ()
-  (interactive)
-  (insert (ivy-read "Pick an element: "
-                    (preprocess-kill-ring))))
-
-(global-set-key (kbd "C-M-y") 'browse-kill-ring)
-
-(defun haskell-new ()
-  (interactive)
-  (let ((name (read-string "Project name: ")))
-    (if (string-empty-p name) (message "Project name cannot be empty.")
-      (when (y-or-n-p (format "Create project %s in %s?" name default-directory))
-        (with-temp-buffer
-          (shell-command (format "stack new %s https://raw.githubusercontent.com/VlachJosef/simple-ghci-mode/master/simple-ghci.hsfiles" name) t)
-          (let ((default-directory (concat default-directory "/" name)))
-            (shell-command "git init" t)
-            (shell-command "git add ." t)
-            (find-file "src/Lib.hs")
-            (end-of-buffer)))))))
-
 (defconst gform-environments
   '("http://localhost:9196/gform/formtemplates"
     "http://localhost:9396/gform/formtemplates"
     "https://www.development.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"
     "https://www.qa.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"
-    "https://www.staging.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"))
+    "https://www.staging.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"
+    "https://test-www.tax.service.gov.uk/submissions/test-only/proxy-to-gform/gform/formtemplates"))
 
 (defvar gform-last-url (car gform-environments))
 
@@ -405,7 +333,11 @@ Rest client: _s_ last _d_ open _r_ reset _q_ quit"
          (set-buffer-multibyte t)
          (message "Uploading rest-client buffer %s" (buffer-name buffer)))))))
 
-
+(defun upload-template-or-handlebar (prefix-arg)
+  (interactive "p")
+  (if (string= "hbs" (file-name-extension (buffer-file-name)))
+      (upload-handlebarstemplates prefix-arg)
+    (upload-template prefix-arg)))
 
 (defun upload-template (prefix-arg)
   (interactive "p")
@@ -435,7 +367,8 @@ Csrf-Token: nocheck
     "http://localhost:9295/submissions/new-form/"
     "https://www.development.tax.service.gov.uk/submissions/new-form/"
     "https://www.qa.tax.service.gov.uk/submissions/new-form/"
-    "https://www.staging.tax.service.gov.uk/submissions/new-form/"))
+    "https://www.staging.tax.service.gov.uk/submissions/new-form/"
+    "https://test-www.tax.service.gov.uk/submissions/new-form/"))
 
 (defvar gform-last-new-form-url (car gform-environments-new-form))
 
@@ -524,155 +457,6 @@ Csrf-Token: nocheck
 (defun my-shell-quote-argument (argument)
   (format "'%s'" argument))
 
-(defun literal-counsel-rg (&optional initial-input initial-directory ag-prompt)
-  "Grep for a string in a root directory using ag.
-
-By default, the root directory is the first directory containing a .git subdirectory.
-
-INITIAL-INPUT can be given as the initial minibuffer input.
-INITIAL-DIRECTORY, if non-nil, is used as the root directory for search.
-EXTRA-AG-ARGS, if non-nil, is appended to `counsel-ag-base-command'.
-AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument.
-CALLER is passed to `ivy-read'.
-
-With a `\\[universal-argument]' prefix argument, prompt for INITIAL-DIRECTORY.
-With a `\\[universal-argument] \\[universal-argument]' prefix argument, \
-prompt additionally for EXTRA-AG-ARGS."
-  (interactive)
-  (let ((default-directory (or initial-directory (counsel--git-root))))
-    (ivy-read ag-prompt
-              #'literal-counsel-rg-function
-              :initial-input initial-input
-              :dynamic-collection t
-              :keymap counsel-ag-map
-              :history 'counsel-git-grep-history
-              :action #'counsel-git-grep-action
-              :require-match t
-              :caller 'counsel-rg)))
-
-(defun literal-counsel-rg-function (string)
-  "Grep in the current directory for STRING."
-  (let* ((command-args (counsel--split-command-args string))
-         (search-term (cdr command-args)))
-    (or
-     (let ((ivy-text search-term))
-       (ivy-more-chars))
-     (let* ((regex search-term)
-            (switches (concat (car command-args)
-                              (counsel--ag-extra-switches regex)
-                              (if (ivy--case-fold-p string)
-                                  " -i "
-                                " -s "))))
-
-       (counsel--async-command (counsel--format-ag-command switches (format "'%s'" regex)))
-       nil))))
-
-(defun test-2 ()
-  (let ((proc (start-file-process-shell-command
-              "test-name"
-              (get-buffer-create "test-name")
-              "rg -M 242 --with-filename --no-heading --line-number  --color never  --fixed-strings  Future\\[ValidatedType\\[ValidatorsResult\\]\\]")))
-   (set-process-sentinel proc #'counsel--async-sentinel)
-   (message "[counsel-ag-function] proc: %s" proc)))
-
-(defun counsel-rg (&optional initial-input initial-directory extra-rg-args rg-prompt)
-  "Grep for a string in the current directory using rg.
-INITIAL-INPUT can be given as the initial minibuffer input.
-INITIAL-DIRECTORY, if non-nil, is used as the root directory for search.
-EXTRA-RG-ARGS string, if non-nil, is appended to `counsel-rg-base-command'.
-RG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument.
-
-Example input with inclusion and exclusion file patterns:
-    require i -- -g*.el"
-  (interactive)
-  (let ((counsel-ag-base-command
-         (if (listp counsel-rg-base-command)
-             (append counsel-rg-base-command (counsel--rg-targets))
-           (concat counsel-rg-base-command " "
-                   (mapconcat #'shell-quote-argument (counsel--rg-targets) " "))))
-        (counsel--grep-tool-look-around
-         (let ((rg (car (if (listp counsel-rg-base-command) counsel-rg-base-command
-                          (split-string counsel-rg-base-command))))
-               (switch "--pcre2"))
-           (and (eq 0 (call-process rg nil nil nil switch "--pcre2-version"))
-                switch))))
-    (counsel-ag initial-input initial-directory extra-rg-args rg-prompt
-                :caller 'counsel-rg)))
-
-(cl-defun counsel-ag (&optional initial-input initial-directory extra-ag-args ag-prompt
-                      &key caller)
-  "Grep for a string in a root directory using ag.
-
-By default, the root directory is the first directory containing a .git subdirectory.
-
-INITIAL-INPUT can be given as the initial minibuffer input.
-INITIAL-DIRECTORY, if non-nil, is used as the root directory for search.
-EXTRA-AG-ARGS, if non-nil, is appended to `counsel-ag-base-command'.
-AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument.
-CALLER is passed to `ivy-read'.
-
-With a `\\[universal-argument]' prefix argument, prompt for INITIAL-DIRECTORY.
-With a `\\[universal-argument] \\[universal-argument]' prefix argument, \
-prompt additionally for EXTRA-AG-ARGS."
-  (interactive)
-  (setq counsel-ag-command counsel-ag-base-command)
-  (setq counsel--regex-look-around counsel--grep-tool-look-around)
-  (counsel-require-program counsel-ag-command)
-  (let ((prog-name (car (if (listp counsel-ag-command) counsel-ag-command
-                          (split-string counsel-ag-command))))
-        (arg (prefix-numeric-value current-prefix-arg)))
-    (when (>= arg 4)
-      (setq initial-directory
-            (or initial-directory
-                (counsel-read-directory-name (concat
-                                              prog-name
-                                              " in directory: ")))))
-    (when (>= arg 16)
-      (setq extra-ag-args
-            (or extra-ag-args
-                (read-from-minibuffer (format "%s args: " prog-name)))))
-    (setq counsel-ag-command (counsel--format-ag-command (or extra-ag-args "") "%s"))
-    (let ((default-directory (or initial-directory
-                                 (counsel--git-root)
-                                 default-directory)))
-      (message "[counsel-rg] counsel--regex-look-around: %s" counsel--regex-look-around)
-      (message "[counsel-rg] counsel-ag-command        : %s" counsel-ag-command)
-      (message "[counsel-rg] initial-input             : %s" initial-input)
-      (ivy-read (or ag-prompt
-                    (concat prog-name ": "))
-                #'counsel-ag-function
-                :initial-input initial-input
-                :dynamic-collection t
-                :keymap counsel-ag-map
-                :history 'counsel-git-grep-history
-                :action #'counsel-git-grep-action
-                :require-match t
-                :caller (or caller 'counsel-ag)))))
-
-
-(defun whole-project-search (x)
-  (when (eq this-command 'ivy-dispatching-done)
-    (setq look-for-thing-at-point-in-app-only-p (not look-for-thing-at-point-in-app-only-p))
-    (look-for-thing-at-point)))
-
-(defun literal-vanilla-rg-toggle (x)
-  (when (eq this-command 'ivy-dispatching-done)
-    (setq literal-counsel-rg-p (not literal-counsel-rg-p))
-    (look-for-thing-at-point)))
-
-;; (defun my-action-1 (x)
-;;   (message "action-1: %s" x))
-
-;; (ivy-set-actions
-;;  'counsel-rg
-;;  '(("m" whole-project-search "search in whole project")
-;;    ("l" literal-vanilla-rg-toggle "literal / vanilla rg")))
-
-(defun ivy-switch-buffer-plain ()
-  (interactive)
-  (let ((ivy-display-style 'plain)) ;; 'fancy display style is somehow broken in switch-buffer minibuffer completion
-    (ivy-switch-buffer)))
-
 (defun show-messages ()
   (interactive)
   (delete-other-windows)
@@ -692,29 +476,7 @@ prompt additionally for EXTRA-AG-ARGS."
            ("ce-2" . "https://typelevel.org/cats-effect/api/2.x/")
            ("ce-3" . "https://typelevel.org/cats-effect/api/3.x/")
            ("fs2-3.0.1" . "https://javadoc.io/doc/co.fs2/fs2-core_2.13/3.0.1/fs2/index.html"))))
-    (ivy-read "Open docs: " libs-versions
-             :caller 'scala-docs
-             :action (lambda (x)
-                       (eww (cdr x))))))
-
-(defun itv-programme-id-to-api-encoded ()
-  (interactive)
-  (if (use-region-p)
-      (let ((beg (region-beginning))
-            (end (region-end)))
-        (subst-char-in-region beg end ?# ?.)
-        (subst-char-in-region beg end ?/ ?_))
-    (message "No active region.")))
-
-(defun itv-programme-id-from-api-encoded ()
-  (interactive)
-  (if (use-region-p)
-      (let ((beg (region-beginning))
-            (end (region-end)))
-        (subst-char-in-region beg end ?. ?#)
-        (subst-char-in-region beg end ?_ ?/))
-    (message "No active region.")))
-
+    (completing-read "Open docs: " libs-versions)))
 
 (defun http-compare-last-two-responses ()
   (interactive)
@@ -729,64 +491,41 @@ prompt additionally for EXTRA-AG-ARGS."
       (message "No available buffers to compare. Setting to `restclient-same-buffer-response' to nil")
       (setq restclient-same-buffer-response nil))))
 
-(defun run-comparator ()
-  (let* ((default-directory "/Users/pepa/develop-itv/betty-tools/tools/amm-scripts/")
-         (compare-candidates (seq-filter (lambda (buffer)
-                                           (eq 0 (string-match "*HTTP GET" (buffer-name buffer))))
-                                         (buffer-list)))
-         (buffer-a (car compare-candidates))
-         (buffer-b (cadr compare-candidates)))
-    (if (and buffer-a buffer-b)
-        (progn
-          (setenv "ARTIFACTORY_USERNAME" "josevlac")
-          (setenv "ARTIFACTORY_PASSWORD" "gYhfh]$A+<zdM+n4YN_V")
-          (with-current-buffer (get-buffer-create "*betty-bruce*")
-            (delete-region (point-min) (point-max))
-            (shell-command (format "amm MultiMain.sc '%s' '%s' '%s' '%s'"
-                                   (escape-single-quetes (buffer-content (flush-restmode-comments buffer-a)))
-                                   (buffer-identifier buffer-a)
-                                   (escape-single-quetes (buffer-content (flush-restmode-comments buffer-b)))
-                                   (buffer-identifier buffer-b))
-                           (current-buffer))
-            (switch-to-buffer (current-buffer))
-            (goto-char (point-max))
-            (insert "\n"
-                    (buffer-name buffer-a) "\n"
-                    (buffer-name buffer-b) "\n"))
-      (message "No available buffers to compare. Setting to `restclient-same-buffer-response' to nil")
-      (setq restclient-same-buffer-response nil)))))
+(defun http-compare-last-two-responses-undo ()
+  (interactive)
+  (message "Setting to `restclient-same-buffer-response' to t")
+  (setq restclient-same-buffer-response t))
 
-(defun buffer-identifier (buffer)
-  (let ((name (buffer-name buffer)))
-    (if (string-match "http[s]?://\\([^/]*\\).*<\\(.*\\)>" name)
-        (format "%s - <%s>" (match-string 1 name) (match-string 2 name))
-      name)))
+(defun gform-internal-auth-refresh ()
+  (interactive)
+  (let ((output (process-lines "internal-auth-token-refresher")))
+    (message "%s" (car output))))
 
-(defun flush-restmode-comments (buffer)
-  (with-current-buffer buffer
-    (goto-char (point-min))
-    (flush-lines "^/.*")
-    (current-buffer)))
+(defun rust-test-only ()
+  "Test using `cargo test`"
+  (interactive)
 
-(defun escape-single-quetes (string)
-  (replace-regexp-in-string "'" "'\\''" string t t))
+  ;;(rust--compile "%s test %s" rust-cargo-bin "tests")
 
-(defun buffer-content (buffer-name)
-  (with-current-buffer buffer-name
-    (buffer-substring-no-properties (point-min) (point-max))))
+  (rust--compile "%s test %s" rust-cargo-bin "")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "glyph::segments::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "model::algebra::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "glyph::polygon::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "model::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "glyph_rasterizer::tests::test_rasterization")
+  ;;(rust--compile "%s test %s -- --nocapture" rust-cargo-bin "tests::test_char_code_to_glyph_id")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "tests::test_monaco_char_a")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "bezier::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "snap_to_grid::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "controls::tests")
+  ;;(rust--compile "%s test %s" rust-cargo-bin "controls::tests::snap_to_grid_right_middle_5")
+  )
 
-(defun bs-linear-schedule-notifications-e (schedule-programme-id production-id channel crud)
-  "SCHEDULE_PROGRAMME_ID equals to SLOT_ID from endpoint
-To get SCHEDULE_PROGRAMME_ID run https://scheduling-schedule-api.prd.bs.itv.com/schedules?productionNo=:production-id&scheduleType=S
-"
+(defun rust-expand ()
+  "Expand macros using `cargo expand`"
+  (interactive)
+  (rust--compile "%s expand --color never --lib --tests -- %s" rust-cargo-bin "controls")
+  )
 
-  (let ((json-string
-         (json-serialize
-          (list 'scheduleProgrammeId schedule-programme-id
-                'channelCode channel
-                'scheduleDate "2021-12-26"
-                'scheduleTime "08:30"
-                'productionNumber production-id
-                'crud crud
-                'self (format "https://scheduling-schedule-api.prd.bs.itv.com/schedules?channelCode=%s&scheduleProgrammeId=%s" channel schedule-programme-id)))))
-    (replace-regexp-in-string "\"" "\\\"" json-string t t)))
+(define-key rust-mode-map (kbd "C-c C-t") 'rust-test-only)
+(define-key rust-mode-map (kbd "C-c C-e") 'rust-expand)

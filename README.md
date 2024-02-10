@@ -15,6 +15,14 @@ stow -D .
 ```
 
 
+Run emacs by:
 ```
-em272 --with-profile=test
+~/bin/em-mac-29-2 -init-directory ~/.config/emacs-profiles/29.2
+```
+
+
+~/bin/em-mac-29-2:
+```
+#!/bin/bash
+exec ~/develop-emacs/emacs-mac/mac/Emacs.app/Contents/MacOS/Emacs "$@"
 ```
