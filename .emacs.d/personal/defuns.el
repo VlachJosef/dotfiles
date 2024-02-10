@@ -47,7 +47,7 @@ Prefix arguments:
 			    (setq copy-to-kill-ring t)))))
     (if (and (executable-find "rg") (executable-find "sort") (executable-find "uniq"))
 	(let* ((default-directory (projectile-project-root))
-	       (res-raw (shell-command-to-string (format "rg import.*%s --no-line-number --no-filename --no-heading | sort | uniq" search-term)))
+	       (res-raw (shell-command-to-string (format "rg \"import.*%s\" --no-line-number --no-filename --no-heading | sort | uniq" search-term)))
 	       (lines (split-string (s-replace "import " "" (s-trim res-raw)) "\n"))
 	       (import (with-temp-buffer
 			 (insert (mapconcat (lambda (elm) (s-trim-left elm)) lines "\n"))
