@@ -606,6 +606,7 @@ point reaches the beginning or end of the buffer, stop there."
 (load-file "~/.dotfiles/.config/emacs-profiles/29.2/json-uploader.el")
 (load-file "~/.dotfiles/.config/emacs-profiles/29.2/hbs-uploader.el")
 (load-file "~/.dotfiles/.config/emacs-profiles/29.2/converters.el")
+(load-file "~/.dotfiles/.config/emacs-profiles/29.2/pipa.el")
 (load-file "~/.dotfiles/.config/emacs-profiles/29.2/my-modeline.el")
 (load-file "~/.dotfiles/.config/emacs-profiles/29.2/minibuffer-hydras.el")
 
