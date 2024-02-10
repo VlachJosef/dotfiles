@@ -372,10 +372,10 @@ current buffer which is not currently visible."
   :ensure t
   :bind (("s-g" . magit-status)
          ("s-m" . magit-status)
-         ("s-b" . magit-blame))
-  :config
-  ;; Show m option in `project-switch-project'
-  (require 'magit-extras))
+         ("s-b" . magit-blame)))
+
+;; Show m option in `project-switch-project' without need to launch magit first
+(require 'magit-extras)
 
 (use-package project
   :init
@@ -438,6 +438,10 @@ point reaches the beginning or end of the buffer, stop there."
 
 (use-package hydra
   :ensure t)
+
+;; https://www.emacswiki.org/emacs/NarrowIndirect
+(use-package narrow-indirect
+  :load-path "/Users/pepa/develop-emacs/narrow-indirect/")
 
 (use-package sbt-mode
   :load-path "/Users/pepa/develop-emacs/emacs-sbt-mode/"
